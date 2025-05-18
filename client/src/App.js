@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import Login from './Login';
 import './App.css';
+
 
 function App() {
   const [taskName, setTaskName] = useState('');
@@ -8,37 +10,36 @@ function App() {
   const [tasks, setTasks] = useState([]);
   const [priority, setPriority] = useState('');
   const [sortOption, setSortOption] = useState('');
+  const [user, setUser] = useState(null);
 
 
+useEffect(() => {
+  if (user) {
+    fetch(`http://localhost:5000/tasks/${user.id}`)
+      .then(res => res.json())
+      .then(data => setTasks(data));
+  }
+}, [user]);
 
-  const handleCreateTask = () => {
-    if (taskName.trim() === '' || dueDate === '' || dueTime === '' || priority === '') {
-      alert('Please fill in all fields.');
-      return;
-    }
-  
-    const newTask = {
-      id: Date.now(),
-      name: taskName,
-      date: dueDate,
-      time: dueTime,
-      priority: priority,
-      completed: false,
-    };
-  
-    setTasks([...tasks, newTask]);
-    setTaskName('');
-    setDueDate('');
-    setDueTime('');
-    setPriority('');
-  };  
+if (!user) {
+  return <Login onLogin={setUser} />;
+}
+ 
 
-  const handleToggle = (id) => {
-    const updatedTasks = tasks.map(task =>
-      task.id === id ? { ...task, completed: !task.completed } : task
-    );
-    setTasks(updatedTasks);
+  const handleToggle = (id, completed) => {
+    fetch(`http://localhost:5000/tasks/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ completed: !completed }),
+    }).then(() => {
+      setTasks(prev => 
+        prev.map(task =>
+          task.id === id ? { ...task, completed: !completed } : task
+        )
+      );
+    });
   };
+  
 
   const sortedTasks = [...tasks];
 
@@ -49,12 +50,57 @@ function App() {
     sortedTasks.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
   }
 
+  const handleAddTask = () => {
+    // Validate required fields
+    if (!taskName.trim() || !dueDate || !priority) {
+      alert('Task name, due date, and priority are required');
+      return;
+    }
+  
+    fetch(`http://localhost:5000/tasks/${user.id}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: taskName,
+        date: dueDate,
+        time: dueTime,
+        priority: priority,
+      })
+    })
+    .then(res => {
+      if (!res.ok) throw new Error('Failed to create task');
+      return res.json();
+    })
+    .then(data => {
+      setTasks(prev => [...prev, {
+        id: data.id,
+        name: taskName,
+        date: dueDate,
+        time: dueTime,
+        priority: priority,
+        completed: false
+      }]);
+      // Reset form
+      setTaskName('');
+      setDueDate('');
+      setDueTime('');
+      setPriority('');
+    })
+    .catch(err => {
+      console.error('Task creation error:', err);
+      alert(err.message);
+    });
+  };
+
 
 
 
   return (
     <div className="App">
-      <h1>TaskMaster</h1>
+      <h1>
+        <img src="/logo.png" alt="logo" className="logo" />
+        TaskMasters
+      </h1>
 
       <div className="task-form">
         <input
@@ -79,7 +125,7 @@ function App() {
           <option value="Medium">Medium</option>
           <option value="Low">Low</option>
         </select>
-        <button onClick={handleCreateTask}>Create Task</button>
+        <button onClick={handleAddTask}>Create Task</button>
       </div>
 
       <div className="sort-options">
@@ -96,7 +142,7 @@ function App() {
         <ul>
           {sortedTasks.map((task) => (
             <li key={task.id}>
-              <input type="checkbox" checked={task.completed} onChange={() => handleToggle(task.id)} />
+              <input type="checkbox" checked={task.completed} onChange={() => handleToggle(task.id, task.completed)} />
               <div>
                 <strong>{task.name}</strong><br />
                 <small>Due: {task.date} {task.time} | 
