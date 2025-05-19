@@ -9,6 +9,7 @@ function App() {
   const [dueTime, setDueTime] = useState('');
   const [tasks, setTasks] = useState([]);
   const [priority, setPriority] = useState('');
+  const [workload, setWorkload] = useState('');
   const [sortOption, setSortOption] = useState('');
   const [user, setUser] = useState(null);
 
@@ -52,8 +53,8 @@ if (!user) {
 
   const handleAddTask = () => {
     // Validate required fields
-    if (!taskName.trim() || !dueDate || !priority) {
-      alert('Task name, due date, and priority are required');
+    if (!taskName.trim() || !dueDate || !priority ||!workload.trim()) {
+      alert('Task name, due date, priority and workload are required');
       return;
     }
   
@@ -65,6 +66,7 @@ if (!user) {
         date: dueDate,
         time: dueTime,
         priority: priority,
+        workload: workload,
       })
     })
     .then(res => {
@@ -78,6 +80,7 @@ if (!user) {
         date: dueDate,
         time: dueTime,
         priority: priority,
+        workload: workload,
         completed: false
       }]);
       // Reset form
@@ -85,12 +88,32 @@ if (!user) {
       setDueDate('');
       setDueTime('');
       setPriority('');
+      setWorkload('');
     })
     .catch(err => {
       console.error('Task creation error:', err);
       alert(err.message);
     });
   };
+
+  const handleDelete = async (taskId) => {
+    try {
+      const response = await fetch(`http://localhost:5000/tasks/${taskId}`, {
+        method: 'DELETE',
+      });
+  
+      if (response.ok) {
+        // update local state after deletion
+        setTasks((prevTasks) => prevTasks.filter(task => task.id !== taskId));
+
+      } else {
+        console.error('Failed to delete task');
+      }
+    } catch (error) {
+      console.error('Error deleting task:', error);
+    }
+  };
+  
 
 
 
@@ -125,6 +148,12 @@ if (!user) {
           <option value="Medium">Medium</option>
           <option value="Low">Low</option>
         </select>
+        <input
+          type="text"
+          placeholder="Workload (e.g., 2hr 30min)"
+          value={workload}
+          onChange={(e) => setWorkload(e.target.value)}
+        />
         <button onClick={handleAddTask}>Create Task</button>
       </div>
 
@@ -145,12 +174,13 @@ if (!user) {
               <input type="checkbox" checked={task.completed} onChange={() => handleToggle(task.id, task.completed)} />
               <div>
                 <strong>{task.name}</strong><br />
-                <small>Due: {task.date} {task.time} | 
+                <small>Due: {task.date} {task.time} | Workload: {task.workload} |
                   <span className={`priority-tag ${task.priority.toLowerCase()}`}>
                     {task.priority}
                   </span>
                 </small>
               </div>
+              <button className="delete-button" onClick={() => handleDelete(task.id)}>Delete</button>
             </li>
           ))}
         </ul>

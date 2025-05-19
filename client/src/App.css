@@ -1,7 +1,7 @@
 /* === Global App Styling === */
 /* In App.css */
 .App {
-  max-width: 800px;
+  max-width: 1200px;
   margin: auto;
   padding: 2rem;
   font-family: 'Segoe UI', sans-serif;
@@ -147,5 +147,21 @@ h1 {
   border: none;
   border-radius: 4px;
   cursor: pointer;
+}
+
+/*delete button */
+.delete-button {
+  background-color: #ff4d4f;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  margin-left: 10px;
+}
+
+.delete-button:hover {
+  background-color: #d9363e;
 }
 

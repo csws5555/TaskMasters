@@ -36,15 +36,16 @@ db.run(`CREATE TABLE IF NOT EXISTS users (
   // And link tasks to users:
 // Drop and recreate tasks table with userId included
 db.serialize(() => {
-  db.run(`DROP TABLE IF EXISTS tasks`);
+  db.run(`ALTER TABLE tasks ADD COLUMN workload TEXT`);
   db.run(`
-    CREATE TABLE tasks (
+    CREATE TABLE IF NOT EXISTS tasks (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       userId INTEGER,
       name TEXT,
       date TEXT,
       time TEXT,
       priority TEXT,
+      workload TEXT,
       completed INTEGER DEFAULT 0,
       FOREIGN KEY(userId) REFERENCES users(id)
     )
@@ -103,7 +104,7 @@ app.get('/tasks/:userId', (req, res) => {
 // Add a new task for a user
 app.post('/tasks/:userId', (req, res) => {
   const userId = req.params.userId;
-  const { name, date, time, priority } = req.body;
+  const { name, date, time, priority, workload } = req.body;
 
   console.log('Received POST /tasks');
   console.log('userId:', userId);
@@ -115,8 +116,8 @@ app.post('/tasks/:userId', (req, res) => {
   }
 
   db.run(
-    `INSERT INTO tasks (userId, name, date, time, priority, completed) VALUES (?, ?, ?, ?, ?, ?)`,
-    [userId, name, date, time, priority, 0],
+    `INSERT INTO tasks (userId, name, date, time, priority, workload, completed) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [userId, name, date, time, priority, workload, 0],
     function (err) {
       if (err) {
         console.error('SQLite INSERT error:', err.message);
@@ -140,6 +141,23 @@ app.put('/tasks/:userId', (req, res) => {
     res.json({ success: true });
   });
 });
+
+// DELETE /tasks/:id - delete a task by ID
+app.delete('/tasks/:id', (req, res) => {
+  const taskId = req.params.id;
+
+  db.run(`DELETE FROM tasks WHERE id = ?`, [taskId], function (err) {
+    if (err) {
+      console.error(err.message);
+      res.status(500).json({ error: 'Failed to delete task' });
+    } else if (this.changes === 0) {
+      res.status(404).json({ error: 'Task not found' });
+    } else {
+      res.status(200).json({ message: 'Task deleted successfully' });
+    }
+  });
+});
+
 
 
 // Start server
