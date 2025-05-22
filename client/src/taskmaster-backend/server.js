@@ -36,7 +36,7 @@ db.run(`CREATE TABLE IF NOT EXISTS users (
   // And link tasks to users:
 // Drop and recreate tasks table with userId included
 db.serialize(() => {
-  db.run(`ALTER TABLE tasks ADD COLUMN workload TEXT`);
+  //db.run(`ALTER TABLE tasks ADD COLUMN workload TEXT`);
   db.run(`
     CREATE TABLE IF NOT EXISTS tasks (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
