@@ -158,6 +158,90 @@ app.delete('/tasks/:id', (req, res) => {
   });
 });
 
+// Add friend-related endpoints
+db.run(`CREATE TABLE IF NOT EXISTS friendships (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user1_id INTEGER,
+  user2_id INTEGER,
+  status TEXT DEFAULT 'pending',
+  action_user_id INTEGER,
+  FOREIGN KEY(user1_id) REFERENCES users(id),
+  FOREIGN KEY(user2_id) REFERENCES users(id)
+)`);
+
+// Search users by username
+app.get('/users/search/:username', (req, res) => {
+  const searchTerm = `%${req.params.username}%`;
+  db.all(`SELECT id, username FROM users WHERE username LIKE ?`, [searchTerm], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+
+// Send friend request
+app.post('/friends/request', (req, res) => {
+  const { fromUserId, toUserId } = req.body;
+  
+  // Check if request already exists
+  db.get(`SELECT * FROM friendships WHERE 
+    (user1_id = ? AND user2_id = ?) OR 
+    (user1_id = ? AND user2_id = ?)`, 
+    [fromUserId, toUserId, toUserId, fromUserId], (err, row) => {
+      if (err) return res.status(500).json({ error: err.message });
+      if (row) return res.status(400).json({ error: 'Friend request already exists' });
+      
+      db.run(`INSERT INTO friendships (user1_id, user2_id, status, action_user_id) 
+              VALUES (?, ?, 'pending', ?)`, 
+              [fromUserId, toUserId, fromUserId], function(err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true });
+      });
+    });
+});
+
+// Get friend requests
+app.get('/friends/requests/:userId', (req, res) => {
+  db.all(`SELECT f.id, u.username, u.id as userId 
+          FROM friendships f 
+          JOIN users u ON f.user1_id = u.id 
+          WHERE f.user2_id = ? AND f.status = 'pending'`, 
+          [req.params.userId], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+
+// Respond to friend request
+app.post('/friends/respond', (req, res) => {
+  const { requestId, userId, accept } = req.body;
+  
+  if (accept) {
+    db.run(`UPDATE friendships SET status = 'accepted', action_user_id = ? 
+            WHERE id = ?`, [userId, requestId], function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ success: true });
+    });
+  } else {
+    db.run(`DELETE FROM friendships WHERE id = ?`, [requestId], function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ success: true });
+    });
+  }
+});
+
+// Get friends list
+app.get('/friends/:userId', (req, res) => {
+  db.all(`SELECT u.id, u.username 
+          FROM friendships f 
+          JOIN users u ON (f.user1_id = u.id OR f.user2_id = u.id) 
+          WHERE (f.user1_id = ? OR f.user2_id = ?) 
+          AND f.status = 'accepted' 
+          AND u.id != ?`, 
+          [req.params.userId, req.params.userId, req.params.userId], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
 
 
 // Start server

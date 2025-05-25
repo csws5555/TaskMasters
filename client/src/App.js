@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Login from './Login';
+import FriendSystem from './FriendSystem';
 import './App.css';
 
 
@@ -185,6 +186,7 @@ if (!user) {
           ))}
         </ul>
       </div>
+      <FriendSystem userId={user.id} />
     </div>
   );
 }
