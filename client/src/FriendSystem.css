@@ -1,0 +1,96 @@
+.friend-system {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  padding: 15px;
+  margin-top: 20px;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.friend-tabs {
+  display: flex;
+  border-bottom: 1px solid #eee;
+  margin-bottom: 15px;
+}
+
+.friend-tabs button {
+  flex: 1;
+  padding: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+
+.friend-tabs button.active {
+  border-bottom: 2px solid #4f8a8b;
+  font-weight: bold;
+}
+
+.friend-content ul {
+  list-style: none;
+  padding: 0;
+}
+
+.friend-content li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.search-box {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.search-box input {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.search-box button {
+  background-color: #4f8a8b;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0 15px;
+  cursor: pointer;
+}
+
+.request-actions {
+  display: flex;
+  gap: 5px;
+}
+
+.request-actions button {
+  padding: 3px 8px;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.request-actions button:first-child {
+  background-color: #28a745;
+  color: white;
+}
+
+.request-actions button:last-child {
+  background-color: #dc3545;
+  color: white;
+}
+
+.search-results button {
+  background-color: #4f8a8b;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  padding: 3px 8px;
+  cursor: pointer;
+}
