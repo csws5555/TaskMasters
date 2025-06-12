@@ -1,0 +1,102 @@
+.set-now-button {
+  background: linear-gradient(45deg, #ffc107, #ff8f00);
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.controls-container {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.search-input {
+  padding: 6px 10px;
+  border: 2px solid #e1e5e9;
+  border-radius: 6px;
+  font-size: 14px;
+  margin-left: 5px;
+}
+
+.loading-container {
+  padding: 40px;
+  text-align: center;
+}
+
+.loading-text {
+  margin-left: 10px;
+}
+
+.empty-state {
+  padding: 40px;
+  text-align: center;
+  color: #666;
+}
+
+.overdue-label {
+  color: #dc3545;
+  font-size: 0.8rem;
+  font-weight: bold;
+  margin-left: 10px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .task-stats {
+    gap: 10px;
+  }
+  
+  .stat-item {
+    min-width: 100px;
+    padding: 10px;
+  }
+  
+  .stat-number {
+    font-size: 1.5rem;
+  }
+  
+  .task-form {
+    grid-template-columns: 1fr;
+    padding: 20px;
+  }
+  
+  .controls-container {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  
+  .control-group {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 5px;
+  }
+  
+  .search-input,
+  .control-group select {
+    width: 100%;
+  }
+  
+  .task-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 15px;
+  }
+  
+  .task-details {
+    flex-direction: column;
+    gap: 5px;
+  }
+  
+  .delete-button {
+    align-self: flex-end;
+  }
+}
