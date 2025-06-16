@@ -9,6 +9,7 @@ function FriendsList({
   showMessage, 
   loadFriends 
 }) {
+  console.log('Rendering friends:', friends);
   return (
     <div className="friends-list-container">
       <div className="section-header">

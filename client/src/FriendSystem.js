@@ -19,87 +19,122 @@ function FriendSystem({ user, showMessage }) {
   }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Load friends from server
-  const loadFriends = async () => {
-    try {
-      setFriendsLoading(true);
-      const response = await fetch(`http://localhost:5000/friends/${user.id}`);
-      if (response.ok) {
-        const data = await response.json();
-        setFriends(data);
-      }
-    } catch (error) {
-      console.error('Error loading friends:', error);
-    } finally {
-      setFriendsLoading(false);
+const loadFriends = async () => {
+  try {
+    setFriendsLoading(true);
+    const response = await fetch(`http://localhost:5000/friends/${user.id}`);
+    
+    console.log('Response status:', response.status); // Debug log
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || 'Failed to load friends');
     }
-  };
+
+    const data = await response.json();
+    console.log('API response data:', data); // Debug log
+    
+    setFriends(data.map(friend => ({
+      id: friend.id,
+      username: friend.username,
+      friendsSince: friend.friendsSince || new Date().toISOString()
+    })));
+  } catch (error) {
+    console.error('Full error details:', {
+      message: error.message,
+      stack: error.stack
+    });
+    showMessage(error.message, 'error');
+  } finally {
+    setFriendsLoading(false);
+  }
+};
 
   // Load friend requests from server
-  const loadFriendRequests = async () => {
-    try {
-      const [incomingResponse, outgoingResponse] = await Promise.all([
-        fetch(`http://localhost:5000/friends/requests/incoming/${user.id}`),
-        fetch(`http://localhost:5000/friends/requests/outgoing/${user.id}`)
-      ]);
+const loadFriendRequests = async () => {
+  try {
+    const [incomingResponse, outgoingResponse] = await Promise.all([
+      fetch(`http://localhost:5000/friends/requests/incoming/${user.id}`),
+      fetch(`http://localhost:5000/friends/requests/outgoing/${user.id}`)
+    ]);
 
-      if (incomingResponse.ok) {
-        const incoming = await incomingResponse.json();
-        setFriendRequests(incoming);
-      }
+    if (!incomingResponse.ok) throw new Error('Failed to load incoming requests');
+    if (!outgoingResponse.ok) throw new Error('Failed to load outgoing requests');
 
-      if (outgoingResponse.ok) {
-        const outgoing = await outgoingResponse.json();
-        setPendingRequests(outgoing);
-      }
-    } catch (error) {
-      console.error('Error loading friend requests:', error);
-    }
-  };
+    const incoming = await incomingResponse.json();
+    const outgoing = await outgoingResponse.json();
+
+    setFriendRequests(incoming.map(req => ({
+      id: req.id,
+      fromUserId: req.fromUserId,
+      fromUsername: req.fromUsername,
+      status: req.status
+    })));
+    
+    setPendingRequests(outgoing.map(req => ({
+      id: req.id,
+      toUserId: req.toUserId,
+      toUsername: req.toUsername,
+      status: req.status
+    })));
+  } catch (error) {
+    console.error('Error loading friend requests:', error);
+    showMessage(error.message, 'error');
+  }
+};
 
   // Send friend request
-  const sendFriendRequest = async (username) => {
-    try {
-      const response = await fetch('http://localhost:5000/friends/requests', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fromUserId: user.id,
-          toUsername: username
-        })
-      });
+const sendFriendRequest = async (username) => {
+  try {
+    const response = await fetch('http://localhost:5000/friends/requests', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fromUserId: user.id,
+        toUsername: username
+      })
+    });
 
-      if (response.ok) {
-        showMessage('Friend request sent successfully!');
-        loadFriendRequests(); // Refresh pending requests
-      } else {
-        const error = await response.json();
-        showMessage(error.error || 'Failed to send friend request', 'error');
-      }
-    } catch (error) {
-      console.error('Error sending friend request:', error);
-      showMessage('Error sending friend request', 'error');
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to send friend request');
     }
-  };
+
+    showMessage(`Friend request sent to ${username} successfully!`, 'success');
+    // Force refresh both lists
+    await loadFriendRequests();
+    setActiveTab('requests'); // Switch to requests tab
+  } catch (error) {
+    console.error('Error sending friend request:', error);
+    showMessage(error.message, 'error');
+  }
+};
 
   // Accept friend request
-  const acceptFriendRequest = async (requestId) => {
-    try {
-      const response = await fetch(`http://localhost:5000/friends/requests/${requestId}/accept`, {
-        method: 'PUT'
-      });
+// Update this function in FriendSystem.js
+const acceptFriendRequest = async (requestId) => {
+  try {
+    const response = await fetch(`http://localhost:5000/friends/requests/${requestId}/accept`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: user.id })
+    });
 
-      if (response.ok) {
-        showMessage('Friend request accepted!');
-        loadFriends();
-        loadFriendRequests();
-      } else {
-        showMessage('Failed to accept friend request', 'error');
-      }
-    } catch (error) {
-      console.error('Error accepting friend request:', error);
-      showMessage('Error accepting friend request', 'error');
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to accept friend request');
     }
-  };
+
+    showMessage('Friend request accepted!');
+    // Refresh both lists
+    await loadFriends();
+    await loadFriendRequests();
+  } catch (error) {
+    console.error('Error accepting friend request:', error);
+    showMessage(error.message, 'error');
+  }
+};
 
   // Decline friend request
   const declineFriendRequest = async (requestId) => {
@@ -202,6 +237,8 @@ function FriendSystem({ user, showMessage }) {
               onSendFriendRequest={sendFriendRequest}
               onAcceptFriendRequest={acceptFriendRequest}
               onDeclineFriendRequest={declineFriendRequest}
+              showMessage={showMessage}
+              loadFriendRequests={loadFriendRequests} 
             />
           </div>
         )}

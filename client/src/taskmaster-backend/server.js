@@ -1,4 +1,3 @@
-// server.js
 const express = require('express');
 const cors = require('cors');
 const sqlite3 = require('sqlite3').verbose();
@@ -10,9 +9,9 @@ app.use(express.json());
 
 // Ensure all responses are JSON
 app.use((req, res, next) => {
-    res.setHeader('Content-Type', 'application/json');
-    next();
-  });
+  res.setHeader('Content-Type', 'application/json');
+  next();
+});
 
 // Connect to database
 const db = new sqlite3.Database('./tasks.db', (err) => {
@@ -20,98 +19,99 @@ const db = new sqlite3.Database('./tasks.db', (err) => {
   console.log('Connected to SQLite database.');
 });
 
-// verify datbase
+// Verify database
 db.get("SELECT name FROM sqlite_master WHERE type='table'", (err, tables) => {
-    if (err) console.error(err);
-    else console.log('Tables:', tables);
-  });
+  if (err) console.error(err);
+  else console.log('Tables:', tables);
+});
 
-// login data
+// Add this early in server.js
+db.get("SELECT name FROM sqlite_master WHERE type='table'", (err, tables) => {
+  console.log('Database tables:', tables);
+});
+
+// Create users table
 db.run(`CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT UNIQUE,
-    password TEXT
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  username TEXT UNIQUE,
+  password TEXT
 )`);
-  
-  // And link tasks to users:
-// Drop and recreate tasks table with userId included
-db.serialize(() => {
-  //db.run(`ALTER TABLE tasks ADD COLUMN workload TEXT`);
-  db.run(`
-    CREATE TABLE IF NOT EXISTS tasks (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      userId INTEGER,
-      name TEXT,
-      date TEXT,
-      time TEXT,
-      priority TEXT,
-      workload TEXT,
-      completed INTEGER DEFAULT 0,
-      FOREIGN KEY(userId) REFERENCES users(id)
-    )
-  `, (err) => {
-    if (err) console.error('Error creating tasks table:', err.message);
-    else console.log('Recreated tasks table with userId');
-  });
-});
 
-  
-// register
-// In server.js, modify the register endpoint:
+// Create tasks table
+db.run(`CREATE TABLE IF NOT EXISTS tasks (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  userId INTEGER,
+  name TEXT,
+  date TEXT,
+  time TEXT,
+  priority TEXT,
+  workload TEXT,
+  completed INTEGER DEFAULT 0,
+  FOREIGN KEY(userId) REFERENCES users(id)
+)`);
+
+// Create friendships table with proper constraints
+db.run(`CREATE TABLE IF NOT EXISTS friendships (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user1_id INTEGER NOT NULL,
+  user2_id INTEGER NOT NULL,
+  status TEXT DEFAULT 'pending',
+  action_user_id INTEGER,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(user1_id) REFERENCES users(id),
+  FOREIGN KEY(user2_id) REFERENCES users(id),
+  CHECK (user1_id != user2_id),
+  UNIQUE (user1_id, user2_id)
+)`);
+
+// Register endpoint
 app.post('/register', (req, res) => {
-    const { username, password } = req.body;
-    if (!username || !password) {
-        return res.status(400).json({ error: 'Username and password are required' });
-    }
-    
-    db.run(
-        `INSERT INTO users (username, password) VALUES (?, ?)`, 
-        [username, password], 
-        function(err) {
-            if (err) {
-                console.error('Registration error:', err);
-                if (err.message.includes('UNIQUE constraint failed')) {
-                    return res.status(400).json({ error: 'Username already exists' });
-                }
-                return res.status(500).json({ error: 'Registration failed', details: err.message });
-            }
-            res.status(201).json({ 
-                id: this.lastID,
-                username: username
-            });
-        }
-    );
-});
+  const { username, password } = req.body;
+  if (!username || !password) {
+    return res.status(400).json({ error: 'Username and password are required' });
+  }
   
-//login 
-app.post('/login', (req, res) => {
-    const { username, password } = req.body;
-    db.get(`SELECT * FROM users WHERE username = ? AND password = ?`, [username, password], (err, row) => {
-      if (err || !row) return res.status(401).send('Invalid credentials');
-      res.json({ id: row.id, username: row.username });
-    });
-  });
+  db.run(
+    `INSERT INTO users (username, password) VALUES (?, ?)`, 
+    [username, password], 
+    function(err) {
+      if (err) {
+        console.error('Registration error:', err);
+        if (err.message.includes('UNIQUE constraint failed')) {
+          return res.status(400).json({ error: 'Username already exists' });
+        }
+        return res.status(500).json({ error: 'Registration failed', details: err.message });
+      }
+      res.status(201).json({ 
+        id: this.lastID,
+        username: username
+      });
+    }
+  );
+});
 
-// get task for a user
+// Login endpoint
+app.post('/login', (req, res) => {
+  const { username, password } = req.body;
+  db.get(`SELECT * FROM users WHERE username = ? AND password = ?`, [username, password], (err, row) => {
+    if (err || !row) return res.status(401).json({ error: 'Invalid credentials' });
+    res.json({ id: row.id, username: row.username });
+  });
+});
+
+// Tasks endpoints
 app.get('/tasks/:userId', (req, res) => {
   db.all('SELECT * FROM tasks WHERE userId = ?', [req.params.userId], (err, rows) => {
-    if (err) return res.status(500).send(err.message);
+    if (err) return res.status(500).json({ error: err.message });
     res.json(rows);
   });
 });
 
-
-// Add a new task for a user
 app.post('/tasks/:userId', (req, res) => {
   const userId = req.params.userId;
   const { name, date, time, priority, workload } = req.body;
 
-  console.log('Received POST /tasks');
-  console.log('userId:', userId);
-  console.log('Request body:', req.body);
-
   if (!name || !date || !priority) {
-    console.error('Missing required fields');
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
@@ -123,17 +123,11 @@ app.post('/tasks/:userId', (req, res) => {
         console.error('SQLite INSERT error:', err.message);
         return res.status(500).json({ error: 'Failed to create task' });
       }
-
-      console.log('Task inserted with ID:', this.lastID);
       res.status(201).json({ id: this.lastID });
     }
   );
 });
 
-
-  
-
-// Update task completion
 app.put('/tasks/:userId', (req, res) => {
   const { id, completed } = req.body;
   db.run(`UPDATE tasks SET completed = ? WHERE id = ?`, [completed ? 1 : 0, id], function (err) {
@@ -142,10 +136,8 @@ app.put('/tasks/:userId', (req, res) => {
   });
 });
 
-// DELETE /tasks/:id - delete a task by ID
 app.delete('/tasks/:id', (req, res) => {
   const taskId = req.params.id;
-
   db.run(`DELETE FROM tasks WHERE id = ?`, [taskId], function (err) {
     if (err) {
       console.error(err.message);
@@ -158,91 +150,204 @@ app.delete('/tasks/:id', (req, res) => {
   });
 });
 
-// Add friend-related endpoints
-db.run(`CREATE TABLE IF NOT EXISTS friendships (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user1_id INTEGER,
-  user2_id INTEGER,
-  status TEXT DEFAULT 'pending',
-  action_user_id INTEGER,
-  FOREIGN KEY(user1_id) REFERENCES users(id),
-  FOREIGN KEY(user2_id) REFERENCES users(id)
-)`);
-
-// Search users by username
+// Friend system endpoints
 app.get('/users/search/:username', (req, res) => {
   const searchTerm = `%${req.params.username}%`;
-  db.all(`SELECT id, username FROM users WHERE username LIKE ?`, [searchTerm], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
-  });
+  const currentUserId = req.query.currentUserId;
+  
+  db.all(
+    `SELECT id, username FROM users 
+     WHERE username LIKE ? AND id != ?`,
+    [searchTerm, currentUserId],
+    (err, rows) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json(rows);
+    }
+  );
 });
 
-// Send friend request
-app.post('/friends/request', (req, res) => {
-  const { fromUserId, toUserId } = req.body;
+app.post('/friends/requests', (req, res) => {
+  const { fromUserId, toUsername } = req.body;
   
-  // Check if request already exists
-  db.get(`SELECT * FROM friendships WHERE 
-    (user1_id = ? AND user2_id = ?) OR 
-    (user1_id = ? AND user2_id = ?)`, 
-    [fromUserId, toUserId, toUserId, fromUserId], (err, row) => {
-      if (err) return res.status(500).json({ error: err.message });
-      if (row) return res.status(400).json({ error: 'Friend request already exists' });
-      
-      db.run(`INSERT INTO friendships (user1_id, user2_id, status, action_user_id) 
-              VALUES (?, ?, 'pending', ?)`, 
-              [fromUserId, toUserId, fromUserId], function(err) {
+  // First get the toUserId from the username
+  db.get(`SELECT id FROM users WHERE username = ?`, [toUsername], (err, toUser) => {
+    if (err || !toUser) {
+      return res.status(400).json({ error: 'User not found' });
+    }
+    
+    const toUserId = toUser.id;
+    
+    // Check if request already exists or they're already friends
+    db.get(
+      `SELECT * FROM friendships WHERE 
+      (user1_id = ? AND user2_id = ?) OR 
+      (user1_id = ? AND user2_id = ?)`, 
+      [fromUserId, toUserId, toUserId, fromUserId], 
+      (err, row) => {
         if (err) return res.status(500).json({ error: err.message });
-        res.json({ success: true });
-      });
-    });
-});
-
-// Get friend requests
-app.get('/friends/requests/:userId', (req, res) => {
-  db.all(`SELECT f.id, u.username, u.id as userId 
-          FROM friendships f 
-          JOIN users u ON f.user1_id = u.id 
-          WHERE f.user2_id = ? AND f.status = 'pending'`, 
-          [req.params.userId], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
+        if (row) {
+          const error = row.status === 'accepted' 
+            ? 'You are already friends with this user' 
+            : 'Friend request already exists';
+          return res.status(400).json({ error });
+        }
+        
+        // Create new request
+        db.run(
+          `INSERT INTO friendships (user1_id, user2_id, status, action_user_id) 
+           VALUES (?, ?, 'pending', ?)`, 
+          [fromUserId, toUserId, fromUserId], 
+          function(err) {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ success: true, requestId: this.lastID });
+          }
+        );
+      }
+    );
   });
 });
 
-// Respond to friend request
-app.post('/friends/respond', (req, res) => {
-  const { requestId, userId, accept } = req.body;
+// Add this endpoint to server.js
+app.put('/friends/requests/:requestId/accept', (req, res) => {
+  const requestId = req.params.requestId;
   
-  if (accept) {
-    db.run(`UPDATE friendships SET status = 'accepted', action_user_id = ? 
-            WHERE id = ?`, [userId, requestId], function(err) {
+  // First verify the request exists and is pending
+  db.get(
+    `SELECT * FROM friendships WHERE id = ? AND status = 'pending'`,
+    [requestId],
+    (err, row) => {
       if (err) return res.status(500).json({ error: err.message });
-      res.json({ success: true });
-    });
-  } else {
-    db.run(`DELETE FROM friendships WHERE id = ?`, [requestId], function(err) {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json({ success: true });
-    });
-  }
+      // Add this debug log
+      console.log('[Accept] Found request:', row);
+      if (!row) return res.status(404).json({ error: 'Request not found or already processed' });
+
+      // Update the friendship status
+      db.run(
+        `UPDATE friendships SET status = 'accepted', action_user_id = ? 
+         WHERE id = ?`,
+        [req.body.userId, requestId],
+        function(err) {
+          if (err) return res.status(500).json({ error: err.message });
+          console.log(`[Accept] Updated request ${requestId} to accepted`);
+          res.json({ success: true });
+        }
+      );
+    }
+  );
 });
 
-// Get friends list
+app.put('/friends/requests/:requestId/decline', (req, res) => {
+  const requestId = req.params.requestId;
+  
+  db.run(
+    `DELETE FROM friendships WHERE id = ? AND status = 'pending'`,
+    [requestId],
+    function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+      if (this.changes === 0) {
+        return res.status(404).json({ error: 'Request not found or already processed' });
+      }
+      res.json({ success: true });
+    }
+  );
+});
+
+// Update the incoming requests endpoint
+app.get('/friends/requests/incoming/:userId', (req, res) => {
+  db.all(
+    `SELECT 
+      f.id, 
+      u.id as fromUserId, 
+      u.username as fromUsername, 
+      f.status,
+      f.action_user_id
+     FROM friendships f 
+     JOIN users u ON f.user1_id = u.id 
+     WHERE f.user2_id = ? AND f.status = 'pending'`, 
+    [req.params.userId], 
+    (err, rows) => {
+      if (err) {
+        console.error('Database error:', err);
+        return res.status(500).json({ error: 'Database error' });
+      }
+      res.json(rows);
+    }
+  );
+});
+
+// Update outgoing requests endpoint
+app.get('/friends/requests/outgoing/:userId', (req, res) => {
+  db.all(
+    `SELECT 
+      f.id, 
+      u.id as toUserId, 
+      u.username as toUsername, 
+      f.status,
+      f.action_user_id
+     FROM friendships f 
+     JOIN users u ON f.user2_id = u.id 
+     WHERE f.user1_id = ? AND f.status = 'pending'`, 
+    [req.params.userId], 
+    (err, rows) => {
+      if (err) {
+        console.error('Database error:', err);
+        return res.status(500).json({ error: 'Database error' });
+      }
+      res.json(rows);
+    }
+  );
+});
+
 app.get('/friends/:userId', (req, res) => {
-  db.all(`SELECT u.id, u.username 
-          FROM friendships f 
-          JOIN users u ON (f.user1_id = u.id OR f.user2_id = u.id) 
-          WHERE (f.user1_id = ? OR f.user2_id = ?) 
-          AND f.status = 'accepted' 
-          AND u.id != ?`, 
-          [req.params.userId, req.params.userId, req.params.userId], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
-  });
+  console.log(`Fetching friends for user ${req.params.userId}`);
+  
+  db.all(
+    `SELECT 
+      u.id, 
+      u.username,
+      datetime(f.created_at) as friendsSince
+     FROM friendships f
+     JOIN users u ON 
+       (u.id = CASE 
+          WHEN f.user1_id = ? THEN f.user2_id 
+          ELSE f.user1_id 
+        END)
+     WHERE 
+       (f.user1_id = ? OR f.user2_id = ?)
+       AND f.status = 'accepted'
+       AND u.id != ?`,
+    [req.params.userId, req.params.userId, req.params.userId, req.params.userId],
+    (err, rows) => {
+      if (err) {
+        console.error('Database error:', err);
+        return res.status(500).json({ 
+          error: 'Failed to load friends',
+          details: err.message 
+        });
+      }
+      console.log(`Found ${rows.length} friends:`, rows);
+      res.json(rows);
+    }
+  );
 });
 
+app.delete('/friends/:userId/:friendId', (req, res) => {
+  const { userId, friendId } = req.params;
+  
+  db.run(
+    `DELETE FROM friendships 
+     WHERE ((user1_id = ? AND user2_id = ?) OR (user1_id = ? AND user2_id = ?))
+     AND status = 'accepted'`, 
+    [userId, friendId, friendId, userId], 
+    function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+      if (this.changes === 0) {
+        return res.status(404).json({ error: 'Friendship not found' });
+      }
+      res.json({ success: true });
+    }
+  );
+});
 
 // Start server
 app.listen(port, () => {
