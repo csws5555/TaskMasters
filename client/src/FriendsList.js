@@ -1,5 +1,6 @@
 import React from 'react';
 import './FriendsList.css';
+import ChatButton from './ChatButton'; 
 
 function FriendsList({ 
   user, 
@@ -67,6 +68,7 @@ function FriendsList({
                 </div>
                 
                 <div className="friend-actions">
+                  <ChatButton user={user} friend={friend} />
                   <button
                     onClick={() => onRemoveFriend(friend.id)}
                     className="remove-button"

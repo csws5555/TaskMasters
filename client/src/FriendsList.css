@@ -356,3 +356,38 @@
     font-size: 1.2rem;
   }
 }
+
+.friend-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center; /* Or flex-start/end depending on preference */
+  flex-wrap: wrap; /* allows responsiveness */
+}
+
+.friend-actions button {
+  flex: 1;
+  min-width: 120px;
+}
+
+.chat-button {
+  padding: 0.875rem 1.5rem;
+  background: linear-gradient(135deg, #64b5f6, #2196f3);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 15px rgba(100, 181, 246, 0.3);
+  transition: all 0.3s ease;
+}
+
+.chat-button:hover {
+  background: linear-gradient(135deg, #42a5f5, #1e88e5);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(100, 181, 246, 0.4);
+}

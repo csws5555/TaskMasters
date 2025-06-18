@@ -1,0 +1,143 @@
+.chat-window {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 350px;
+  height: 225px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 0 20px rgba(0,0,0,0.2);
+  display: flex;
+  flex-direction: column;
+  z-index: 1000;
+}
+
+.chat-header {
+  position: relative;
+  background: linear-gradient(135deg, #d4a5c9 0%, #ff6b6b 100%);
+  color: white;
+  padding: 10px 15px;
+  border-radius: 10px 10px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 40px;
+  z-index: 1001;
+}
+
+.close-chat {
+  background:  #ff4d4d;
+  border: none;
+  color: white;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: contents;
+  align-items:center;
+  justify-content: center;
+  padding: 0px;
+  margin-left: 50px;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+  z-index: 1002;
+  line-height: 1;
+}
+
+.close-chat:hover {
+  background: rgba(255, 255, 255, 0.5);
+  transform: scale(1.1);
+}
+
+.messages-container {
+  flex: 1;
+  padding: 10px 5px 10px 10px;
+  overflow-y: auto;
+}
+
+.message {
+  margin-bottom: 10px;
+  max-width: 80%;
+  word-wrap: break-word;
+}
+
+.message.sent {
+  margin-left: auto;
+  text-align: right;
+}
+
+.message.received {
+  margin-left: 0;
+  margin-right: auto;
+  text-align: left;
+}
+
+.message-content {
+  padding: 8px 12px;
+  border-radius: 15px;
+  display: inline-block;
+}
+
+.sent .message-content {
+  background: #d4a5c9;
+  color: white;
+}
+
+.received .message-content {
+  background: #f0f0f0;
+  color: #333;
+}
+
+.message-time {
+  font-size: 0.7rem;
+  color: #777;
+  margin-top: 3px;
+}
+
+.message-form {
+  display: flex;
+  padding: 10px;
+  border-top: 1px solid #eee;
+}
+
+.message-form input {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  margin-right: 5px;
+}
+
+.message-form button {
+  background: linear-gradient(135deg, #d4a5c9 0%, #ff6b6b 100%);
+  color: white;
+  border: none;
+  border-radius: 20px;
+  padding: 6px 10px;
+  width: auto;            /* Let width fit content */
+  min-width: 50px;        /* Optional: prevents it from being too small */
+  max-width: 80px;        /* Optional: caps its width */
+  cursor: pointer;
+  text-align: center;
+}
+
+.chat-error {
+  background: #ffebee;
+  color: #c62828;
+  padding: 8px;
+  margin: 5px;
+  border-radius: 4px;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.message-form button:disabled {
+  background: #ccc !important;
+  cursor: not-allowed;
+}
+
+.message-form button.sending {
+  opacity: 0.7;
+}
