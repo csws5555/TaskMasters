@@ -4,7 +4,17 @@ const sqlite3 = require('sqlite3').verbose();
 const app = express();
 const port = 5000;
 
-app.use(cors());
+const corsOptions = {
+  origin: 'http://localhost:3000',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
+
+
 app.use(express.json());
 
 // Ensure all responses are JSON
@@ -62,6 +72,18 @@ db.run(`CREATE TABLE IF NOT EXISTS friendships (
   FOREIGN KEY(user2_id) REFERENCES users(id),
   CHECK (user1_id != user2_id),
   UNIQUE (user1_id, user2_id)
+)`);
+
+// chat function
+db.run(`CREATE TABLE IF NOT EXISTS messages (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  sender_id INTEGER NOT NULL,
+  receiver_id INTEGER NOT NULL,
+  message TEXT NOT NULL,
+  timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+  is_read INTEGER DEFAULT 0,
+  FOREIGN KEY(sender_id) REFERENCES users(id),
+  FOREIGN KEY(receiver_id) REFERENCES users(id)
 )`);
 
 // Register endpoint
@@ -345,6 +367,69 @@ app.delete('/friends/:userId/:friendId', (req, res) => {
         return res.status(404).json({ error: 'Friendship not found' });
       }
       res.json({ success: true });
+    }
+  );
+});
+
+// Get chat messages between two users
+app.get('/messages/:userId/:friendId', (req, res) => {
+  const { userId, friendId } = req.params;
+  db.all(
+    `SELECT m.*, u.username as sender_name 
+     FROM messages m
+     JOIN users u ON m.sender_id = u.id
+     WHERE (sender_id = ? AND receiver_id = ?) 
+     OR (sender_id = ? AND receiver_id = ?)
+     ORDER BY timestamp`,
+    [userId, friendId, friendId, userId],
+    (err, rows) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json(rows);
+    }
+  );
+});
+
+// Send a new message
+// Add this with your other routes (after app.use(cors()) but before app.listen)
+app.post('/messages', (req, res) => {
+  console.log('Received message:', req.body); // Debug log
+  const { sender_id, receiver_id, message } = req.body;
+
+  // Basic validation
+  if (!sender_id || !receiver_id || !message) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  // Insert into database
+  db.run(
+    `INSERT INTO messages (sender_id, receiver_id, message) VALUES (?, ?, ?)`,
+    [sender_id, receiver_id, message],
+    function(err) {
+      if (err) {
+        console.error('Database error:', err);
+        return res.status(500).json({ error: 'Failed to save message' });
+      }
+      res.json({
+        id: this.lastID,
+        sender_id,
+        receiver_id,
+        message,
+        timestamp: new Date().toISOString()
+      });
+    }
+  );
+});
+
+// Mark messages as read
+app.put('/messages/read', (req, res) => {
+  const { userId, friendId } = req.body;
+  db.run(
+    `UPDATE messages SET is_read = 1 
+     WHERE sender_id = ? AND receiver_id = ? AND is_read = 0`,
+    [friendId, userId],
+    function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ updated: this.changes });
     }
   );
 });
