@@ -86,6 +86,19 @@ db.run(`CREATE TABLE IF NOT EXISTS messages (
   FOREIGN KEY(receiver_id) REFERENCES users(id)
 )`);
 
+// Add this to your CREATE TABLE statements
+db.run(`CREATE TABLE IF NOT EXISTS shared_tasks (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  task_id INTEGER NOT NULL,
+  owner_id INTEGER NOT NULL,
+  shared_with_id INTEGER NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+  FOREIGN KEY(owner_id) REFERENCES users(id),
+  FOREIGN KEY(shared_with_id) REFERENCES users(id),
+  UNIQUE (task_id, shared_with_id)
+)`);
+
 // Register endpoint
 app.post('/register', (req, res) => {
   const { username, password } = req.body;
@@ -129,12 +142,141 @@ app.get('/tasks/:userId', (req, res) => {
   });
 });
 
+// Share task endpoint
+// Share task endpoint - CORRECTED VERSION
+app.post('/tasks/share', (req, res) => {
+  const { taskId, ownerId, sharedWithIds } = req.body;
+  console.log('Received share request:', req.body);
+
+  // Validate sharing-specific fields (NOT task creation fields)
+  const errors = [];
+  if (!taskId || typeof taskId !== 'number') errors.push('taskId is required and must be a number');
+  if (!ownerId || typeof ownerId !== 'number') errors.push('ownerId is required and must be a number');
+  if (!sharedWithIds || !Array.isArray(sharedWithIds)) errors.push('sharedWithIds is required and must be an array');
+  if (sharedWithIds && Array.isArray(sharedWithIds) && sharedWithIds.length === 0) errors.push('sharedWithIds cannot be empty');
+  if (sharedWithIds && Array.isArray(sharedWithIds) && sharedWithIds.some(id => typeof id !== 'number')) errors.push('sharedWithIds must contain numbers only');
+
+  if (errors.length > 0) {
+    return res.status(400).json({ 
+      error: 'Invalid sharing request',
+      details: errors,
+      received: req.body
+    });
+  }
+
+  // Verify all sharedWithIds are friends with owner
+  const placeholders = sharedWithIds.map(() => '?').join(',');
+  const query = `
+    SELECT COUNT(*) as count FROM friendships 
+    WHERE ((user1_id = ? AND user2_id IN (${placeholders})) 
+    OR (user1_id IN (${placeholders}) AND user2_id = ?))
+    AND status = 'accepted'
+  `;
+  
+  const params = [ownerId, ...sharedWithIds, ...sharedWithIds, ownerId];
+  console.log('Friendship check query:', query, params);
+
+  db.get(query, params, (err, result) => {
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    console.log('Friendship check result:', result);
+    
+    if (result.count !== sharedWithIds.length) {
+      console.log('Not all users are friends');
+      return res.status(400).json({ 
+        error: 'Cannot share with non-friends',
+        details: `Found ${result.count} friendships but need ${sharedWithIds.length}`
+      });
+    }
+
+    // Insert shared task records
+    const statements = sharedWithIds.map(sharedWithId => 
+      `INSERT INTO shared_tasks (task_id, owner_id, shared_with_id) VALUES (?, ?, ?)`
+    );
+    
+    db.serialize(() => {
+      db.run('BEGIN TRANSACTION');
+      
+      let completed = 0;
+      let hasError = false;
+      
+      statements.forEach((stmt, i) => {
+        db.run(stmt, [taskId, ownerId, sharedWithIds[i]], function(err) {
+          if (err && !hasError) {
+            hasError = true;
+            console.error('Error sharing task:', err);
+            db.run('ROLLBACK');
+            return res.status(500).json({ error: 'Failed to share task', details: err.message });
+          }
+          
+          completed++;
+          if (completed === statements.length && !hasError) {
+            db.run('COMMIT', (err) => {
+              if (err) {
+                console.error('Commit error:', err);
+                return res.status(500).json({ error: 'Failed to share task' });
+              }
+              console.log('Task shared successfully');
+              res.json({ success: true });
+            });
+          }
+        });
+      });
+    });
+  });
+});
+
+// Get shared tasks endpoint
+app.get('/tasks/shared/:userId', (req, res) => {
+  const userId = req.params.userId;
+  
+  db.all(`
+    SELECT 
+      t.*, 
+      u.username as owner_username,
+      st.id as shared_task_id
+    FROM shared_tasks st
+    JOIN tasks t ON st.task_id = t.id
+    JOIN users u ON st.owner_id = u.id
+    WHERE st.shared_with_id = ?
+  `, [userId], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+
+// Delete shared task endpoint
+app.delete('/tasks/shared/:taskId', (req, res) => {
+  const taskId = req.params.taskId;
+  
+  db.run(`DELETE FROM tasks WHERE id = ?`, [taskId], function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+    if (this.changes === 0) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+    res.json({ success: true });
+  });
+});
+
+
 app.post('/tasks/:userId', (req, res) => {
   const userId = req.params.userId;
   const { name, date, time, priority, workload } = req.body;
 
-  if (!name || !date || !priority) {
-    return res.status(400).json({ error: 'Missing required fields' });
+  // Enhanced validation with specific error messages
+  const missingFields = [];
+  if (!name || name.trim() === '') missingFields.push('name');
+  if (!date || date.trim() === '') missingFields.push('date');
+  if (!priority || priority.trim() === '') missingFields.push('priority');
+
+  if (missingFields.length > 0) {
+    return res.status(400).json({ 
+      error: 'Missing required fields',
+      missingFields: missingFields
+    });
   }
 
   db.run(
@@ -433,6 +575,8 @@ app.put('/messages/read', (req, res) => {
     }
   );
 });
+
+
 
 // Start server
 app.listen(port, () => {

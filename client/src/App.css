@@ -121,53 +121,7 @@ h1 {
   margin: 0 0 0 5px;
 }
 
-/* Task form styles */
-.task-form {
-  background: rgba(255, 255, 255, 0.95);
-  padding: 30px;
-  border-radius: 15px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-  margin-bottom: 30px;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 15px;
-  align-items: end;
-}
 
-.task-form input,
-.task-form select {
-  padding: 12px 15px;
-  border: 2px solid #00000023;
-  border-radius: 8px;
-  font-size: 14px;
-  transition: all 0.3s ease;
-  background: #f8f9fa;
-}
-
-.task-form input:focus,
-.task-form select:focus {
-  outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-  background: white;
-}
-
-.task-form button {
-  padding: 12px 25px;
-  background: linear-gradient(45deg, #28a745, #20c997);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 14px;
-}
-
-.task-form button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(40, 167, 69, 0.3);
-}
 
 /* Sort options */
 .sort-options {
