@@ -292,12 +292,46 @@ app.post('/tasks/:userId', (req, res) => {
   );
 });
 
+// Replace the existing PUT /tasks/:userId endpoint in server.js with this:
+
 app.put('/tasks/:userId', (req, res) => {
   const { id, completed } = req.body;
-  db.run(`UPDATE tasks SET completed = ? WHERE id = ?`, [completed ? 1 : 0, id], function (err) {
-    if (err) return res.status(500).json({ error: 'Failed to update task' });
-    res.json({ success: true });
+  const userId = req.params.userId;
+  
+  console.log('PUT /tasks/:userId called with:', { 
+    userId, 
+    taskId: id, 
+    completed,
+    body: req.body 
   });
+  
+  // Validate required fields
+  if (!id) {
+    return res.status(400).json({ error: 'Task ID is required' });
+  }
+  
+  if (typeof completed !== 'boolean') {
+    return res.status(400).json({ error: 'Completed status must be a boolean' });
+  }
+  
+  // Update the task, but also verify it belongs to the user for security
+  db.run(
+    `UPDATE tasks SET completed = ? WHERE id = ? AND userId = ?`, 
+    [completed ? 1 : 0, id, userId], 
+    function (err) {
+      if (err) {
+        console.error('Database error:', err);
+        return res.status(500).json({ error: 'Failed to update task' });
+      }
+      
+      if (this.changes === 0) {
+        return res.status(404).json({ error: 'Task not found or not owned by user' });
+      }
+      
+      console.log(`Successfully updated task ${id} for user ${userId}`);
+      res.json({ success: true, changes: this.changes });
+    }
+  );
 });
 
 app.delete('/tasks/:id', (req, res) => {

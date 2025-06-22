@@ -117,27 +117,83 @@ function Task({ user, showMessage }) {
   };
 
   // Toggle task completion
-  const handleToggle = async (id, completed) => {
-    // Optimistic update
-    const updateTasks = activeTaskTab === 'personal' ? setTasks : setSharedTasks;
-    updateTasks(prev => prev.map(task => task.id === id ? { ...task, completed: !completed } : task));
-
-    try {
-      const response = await fetch(`http://localhost:5000/tasks/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ completed: !completed }),
-      });
-
-      if (!response.ok) throw new Error('Failed to update task');
-      showMessage(completed ? 'Task marked as incomplete' : 'Task completed!');
-    } catch (error) {
-      // Revert optimistic update
-      updateTasks(prev => prev.map(task => task.id === id ? { ...task, completed } : task));
-      showMessage('Failed to update task', 'error');
-      console.error('Task update error:', error);
+// Fixed handleToggle function - replace the existing one in Task.js
+const handleToggle = async (id, completed) => {
+  console.log('handleToggle called with:', { id, completed, idType: typeof id });
+  console.log('Current tasks:', tasks.map(t => ({ id: t.id, idType: typeof t.id, name: t.name, completed: t.completed })));
+  console.log('Current sharedTasks:', sharedTasks.map(t => ({ id: t.id, idType: typeof t.id, name: t.name, completed: t.completed })));
+  
+  try {
+    // Check which list contains this task (with type-safe comparison)
+    const isInPersonalTasks = tasks.some(task => String(task.id) === String(id));
+    const isInSharedTasks = sharedTasks.some(task => String(task.id) === String(id));
+    
+    console.log('Task location:', { isInPersonalTasks, isInSharedTasks });
+    
+    if (!isInPersonalTasks && !isInSharedTasks) {
+      console.error('Task not found in either list!');
+      showMessage('Task not found', 'error');
+      return;
     }
-  };
+    
+    // Optimistic update - update the correct list(s)
+    if (isInPersonalTasks) {
+      console.log('Updating personal tasks');
+      setTasks(prev => {
+        const updated = prev.map(task => 
+          String(task.id) === String(id) ? { ...task, completed: !completed } : task
+        );
+        console.log('Updated personal tasks:', updated.map(t => ({ id: t.id, name: t.name, completed: t.completed })));
+        return updated;
+      });
+    }
+    if (isInSharedTasks) {
+      console.log('Updating shared tasks');
+      setSharedTasks(prev => {
+        const updated = prev.map(task => 
+          String(task.id) === String(id) ? { ...task, completed: !completed } : task
+        );
+        console.log('Updated shared tasks:', updated.map(t => ({ id: t.id, name: t.name, completed: t.completed })));
+        return updated;
+      });
+    }
+
+    // FIXED: Send both id and completed status to server
+    const response = await fetch(`http://localhost:5000/tasks/${user.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        id: id,           // Include the task ID
+        completed: !completed  // Send the new completion status
+      }),
+    });
+
+    console.log('Server response status:', response.status);
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Server error:', errorData);
+      throw new Error(errorData.error || 'Failed to update task');
+    }
+    
+    const responseData = await response.json();
+    console.log('Server response data:', responseData);
+    
+    showMessage(completed ? 'Task marked as incomplete' : 'Task completed!');
+  } catch (error) {
+    console.error('Error in handleToggle:', error);
+    
+    // Revert optimistic update on both lists
+    setTasks(prev => prev.map(task => 
+      String(task.id) === String(id) ? { ...task, completed } : task
+    ));
+    setSharedTasks(prev => prev.map(task => 
+      String(task.id) === String(id) ? { ...task, completed } : task
+    ));
+    
+    showMessage('Failed to update task: ' + error.message, 'error');
+  }
+};
 
   // Create new task (with optional sharing)
 const handleAddTask = async () => {
