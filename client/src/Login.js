@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-const RENDER_URL=process.env.RENDER_URL;
+const API_URL=process.env.REACT_APP_API_URL || 'http://localhost:10000';
 
 function Login({ onLogin }) {
   const [username, setUsername] = useState('');
@@ -57,7 +57,7 @@ function Login({ onLogin }) {
     const endpoint = isRegistering ? '/register' : '/login';
     
     try {
-      const response = await fetch(`'${RENDER_URL}'${endpoint}`, {
+      const response = await fetch(`${API_URL}${endpoint}`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

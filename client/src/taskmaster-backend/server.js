@@ -2,11 +2,14 @@ const express = require('express');
 const cors = require('cors');
 const sqlite3 = require('sqlite3').verbose();
 const app = express();
-const port = process.env.PORT || 5000;
+const port = process.env.PORT || 10000;
 require('dotenv').config();
 
 const corsOptions = {
-  origin: 'http://localhost:3000',
+  origin: [
+    'http://localhost:3000',                  // local dev
+    'https://taskmastersss.netlify.app/'  // deployed frontend
+  ],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
