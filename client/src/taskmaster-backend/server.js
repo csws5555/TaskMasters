@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const sqlite3 = require('sqlite3').verbose();
 const app = express();
-const port = process.env.RENDER_PORT;
+const port = process.env.PORT || 5000;
 require('dotenv').config();
 
 const corsOptions = {
