@@ -9,11 +9,21 @@ app.get('/', (req, res) => {
   res.json({ message: 'Server is running' });
 });
 
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://taskmastersss.netlify.app'
+];
+
 const corsOptions = {
-  origin: [
-    'http://localhost:3000',              // local dev
-    'https://taskmastersss.netlify.app'  // deployed frontend
-  ],
+  origin: function(origin, callback) {
+    // allow requests with no origin (like Postman or curl)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
@@ -21,7 +31,6 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-
 
 app.use(express.json());
 
