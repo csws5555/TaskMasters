@@ -5,6 +5,10 @@ const app = express();
 const port = process.env.PORT || 10000;
 require('dotenv').config();
 
+app.get('/', (req, res) => {
+  res.json({ message: 'Server is running' });
+});
+
 const corsOptions = {
   origin: [
     'http://localhost:3000',                  // local dev
