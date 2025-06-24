@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import './FriendRequests.css';
 import PropTypes from 'prop-types';
 
-require('dotenv').config();
 const RENDER_URL=process.env.RENDER_URL;
 
 FriendRequests.propTypes = {

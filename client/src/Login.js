@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-require('dotenv').config();
 const RENDER_URL=process.env.RENDER_URL;
 
 function Login({ onLogin }) {
@@ -58,7 +57,7 @@ function Login({ onLogin }) {
     const endpoint = isRegistering ? '/register' : '/login';
     
     try {
-      const response = await fetch(`${RENDER_URL}${endpoint}`, {
+      const response = await fetch(`'${RENDER_URL}'${endpoint}`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

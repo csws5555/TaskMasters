@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './ChatWindow.css';
-require('dotenv').config();
 
 function ChatWindow({ user, friend, onClose }) {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef(null);
-  const API_BASE=process.env.RENDER_URL;
+  const API_BASE = process.env.RENDER_URL;
 
   // Wrap loadMessages in useCallback to avoid useEffect warnings
   const loadMessages = useCallback(async () => {
