@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+require('dotenv').config();
+const RENDER_URL=process.env.RENDER_URL;
 
 function Login({ onLogin }) {
   const [username, setUsername] = useState('');
@@ -9,7 +11,7 @@ function Login({ onLogin }) {
   const [errors, setErrors] = useState({});
   const [message, setMessage] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-
+  
   // Enhanced validation
   const validateForm = () => {
     const newErrors = {};
@@ -56,7 +58,7 @@ function Login({ onLogin }) {
     const endpoint = isRegistering ? '/register' : '/login';
     
     try {
-      const response = await fetch(`http://localhost:5000${endpoint}`, {
+      const response = await fetch(`${RENDER_URL}${endpoint}`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

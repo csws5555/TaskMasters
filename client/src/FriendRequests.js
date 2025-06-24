@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import './FriendRequests.css';
 import PropTypes from 'prop-types';
 
+require('dotenv').config();
+const RENDER_URL=process.env.RENDER_URL;
+
 FriendRequests.propTypes = {
   user: PropTypes.object.isRequired,
   friendRequests: PropTypes.array.isRequired,
@@ -35,8 +38,8 @@ const handleSearch = async (e) => {
   setIsSearching(true);
   try {
     const response = await fetch(
-      `http://localhost:5000/users/search/${encodeURIComponent(searchInput)}?currentUserId=${user.id}`
-    );
+    `${RENDER_URL}/users/search/${encodeURIComponent(searchInput)}?currentUserId=${user.id}`
+  );
     
     // First check if the response is JSON
     const contentType = response.headers.get('content-type');
