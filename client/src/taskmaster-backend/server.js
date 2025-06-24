@@ -11,7 +11,7 @@ app.get('/', (req, res) => {
 
 const corsOptions = {
   origin: [
-    'http://localhost:3000',                  // local dev
+    'http://localhost:3000',              // local dev
     'https://taskmastersss.netlify.app'  // deployed frontend
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],

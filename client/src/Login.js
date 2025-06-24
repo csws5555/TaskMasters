@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 const API_URL=process.env.REACT_APP_API_URL || 'http://localhost:10000';
 
+console.log('API URL:', API_URL);
+
 function Login({ onLogin }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
