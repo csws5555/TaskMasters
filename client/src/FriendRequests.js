@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import './FriendRequests.css';
 import PropTypes from 'prop-types';
 
-const RENDER_URL=process.env.RENDER_URL;
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:10000'; 
+console.log('API URL (Task):', API_URL);
 
 FriendRequests.propTypes = {
   user: PropTypes.object.isRequired,
@@ -37,7 +38,7 @@ const handleSearch = async (e) => {
   setIsSearching(true);
   try {
     const response = await fetch(
-    `${RENDER_URL}/users/search/${encodeURIComponent(searchInput)}?currentUserId=${user.id}`
+    `${API_URL}/users/search/${encodeURIComponent(searchInput)}?currentUserId=${user.id}`
   );
     
     // First check if the response is JSON
