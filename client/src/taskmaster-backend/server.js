@@ -15,19 +15,20 @@ const allowedOrigins = [
 ];
 
 const corsOptions = {
-  origin: function(origin, callback) {
-    // allow requests with no origin (like Postman or curl)
+  origin: (origin, callback) => {
+    // allow Postman / curl (no Origin header)
     if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
+
+    if (allowedOrigins.includes(origin)) {
+      // reflect SAME origin back
+      return callback(null, origin);   // <<< key line
     }
+    return callback(new Error('Not allowed by CORS'));
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 204
 };
 
 app.use(cors(corsOptions));
