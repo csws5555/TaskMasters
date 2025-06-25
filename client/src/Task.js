@@ -1,6 +1,9 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import './Task.css';
 
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:10000'; 
+console.log('API URL (Task):', API_URL);
+
 function Task({ user, showMessage }) {
   const [taskName, setTaskName] = useState('');
   const [dueDate, setDueDate] = useState('');
@@ -25,7 +28,7 @@ function Task({ user, showMessage }) {
   const loadTasks = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:5000/tasks/${user.id}`);
+      const response = await fetch(`${API_URL}/tasks/${user.id}`);
       if (response.ok) {
         const data = await response.json();
         setTasks(data);
@@ -41,7 +44,7 @@ function Task({ user, showMessage }) {
   // Load shared tasks
   const loadSharedTasks = useCallback(async () => {
     try {
-      const response = await fetch(`http://localhost:5000/tasks/shared/${user.id}`);
+      const response = await fetch(`${API_URL}/tasks/shared/${user.id}`);
       if (response.ok) {
         const data = await response.json();
         setSharedTasks(data);
@@ -159,7 +162,7 @@ const handleToggle = async (id, completed) => {
     }
 
     // FIXED: Send both id and completed status to server
-    const response = await fetch(`http://localhost:5000/tasks/${user.id}`, {
+    const response = await fetch(`${API_URL}/tasks/${user.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
@@ -213,7 +216,7 @@ const handleAddTask = async () => {
     console.log('Creating task with payload:', taskPayload);
 
     // 2. Create the task
-    const taskResponse = await fetch(`http://localhost:5000/tasks/${user.id}`, {
+    const taskResponse = await fetch(`${API_URL}/tasks/${user.id}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(taskPayload),
@@ -239,7 +242,7 @@ const handleAddTask = async () => {
 
       console.log('Sharing payload:', sharePayload);
 
-      const shareResponse = await fetch('http://localhost:5000/tasks/share', {
+      const shareResponse = await fetch(`${API_URL}/tasks/share`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(sharePayload),
@@ -283,7 +286,7 @@ const handleAddTask = async () => {
 
   try {
     const endpoint = isShared ? `shared/${taskId}` : taskId;
-    const response = await fetch(`http://localhost:5000/tasks/${endpoint}`, {
+    const response = await fetch(`${API_URL}/tasks/${endpoint}`, {
       method: 'DELETE'
     });
 
@@ -309,7 +312,7 @@ const handleAddTask = async () => {
     setShareMode(!shareMode);
     if (!shareMode) {
       // Load friends when opening share mode
-      fetch(`http://localhost:5000/friends/${user.id}`)
+      fetch(`${API_URL}/friends/${user.id}`)
         .then(res => res.json())
         .then(data => {
           setFriendsToShare(data.map(f => ({ ...f, selected: false })));
