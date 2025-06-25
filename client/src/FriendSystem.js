@@ -58,7 +58,7 @@ const loadFriendRequests = async () => {
   try {
     const [incomingResponse, outgoingResponse] = await Promise.all([
       fetch(`${API_URL}/friends/requests/incoming/${user.id}`),
-      fetch(`${API_URL}0/friends/requests/outgoing/${user.id}`)
+      fetch(`${API_URL}/friends/requests/outgoing/${user.id}`)
     ]);
 
     if (!incomingResponse.ok) throw new Error('Failed to load incoming requests');
