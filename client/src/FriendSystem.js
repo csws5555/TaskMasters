@@ -3,6 +3,9 @@ import FriendsList from './FriendsList';
 import FriendRequests from './FriendRequests';
 import './FriendSystem.css';
 
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:10000'; 
+console.log('API URL (Task):', API_URL);
+
 function FriendSystem({ user, showMessage }) {
   const [activeTab, setActiveTab] = useState('friends');
   const [friends, setFriends] = useState([]);
@@ -22,7 +25,7 @@ function FriendSystem({ user, showMessage }) {
 const loadFriends = async () => {
   try {
     setFriendsLoading(true);
-    const response = await fetch(`http://localhost:5000/friends/${user.id}`);
+    const response = await fetch(`${API_URL}/friends/${user.id}`);
     
     console.log('Response status:', response.status); // Debug log
     
@@ -54,8 +57,8 @@ const loadFriends = async () => {
 const loadFriendRequests = async () => {
   try {
     const [incomingResponse, outgoingResponse] = await Promise.all([
-      fetch(`http://localhost:5000/friends/requests/incoming/${user.id}`),
-      fetch(`http://localhost:5000/friends/requests/outgoing/${user.id}`)
+      fetch(`${API_URL}/friends/requests/incoming/${user.id}`),
+      fetch(`${API_URL}/friends/requests/outgoing/${user.id}`)
     ]);
 
     if (!incomingResponse.ok) throw new Error('Failed to load incoming requests');
@@ -86,7 +89,7 @@ const loadFriendRequests = async () => {
   // Send friend request
 const sendFriendRequest = async (username) => {
   try {
-    const response = await fetch('http://localhost:5000/friends/requests', {
+    const response = await fetch(`${API_URL}/friends/requests`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -115,7 +118,7 @@ const sendFriendRequest = async (username) => {
 // Update this function in FriendSystem.js
 const acceptFriendRequest = async (requestId) => {
   try {
-    const response = await fetch(`http://localhost:5000/friends/requests/${requestId}/accept`, {
+    const response = await fetch(`${API_URL}/friends/requests/${requestId}/accept`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: user.id })
@@ -139,7 +142,7 @@ const acceptFriendRequest = async (requestId) => {
   // Decline friend request
   const declineFriendRequest = async (requestId) => {
     try {
-      const response = await fetch(`http://localhost:5000/friends/requests/${requestId}/decline`, {
+      const response = await fetch(`${API_URL}/friends/requests/${requestId}/decline`, {
         method: 'PUT'
       });
 
@@ -162,7 +165,7 @@ const acceptFriendRequest = async (requestId) => {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/friends/${user.id}/${friendId}`, {
+      const response = await fetch(`${API_URL}/friends/${user.id}/${friendId}`, {
         method: 'DELETE'
       });
 

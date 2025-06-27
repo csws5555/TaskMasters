@@ -1,23 +1,25 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './ChatWindow.css';
 
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:10000'; 
+console.log('API URL (Task):', API_URL);
+
 function ChatWindow({ user, friend, onClose }) {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef(null);
-  const API_BASE = 'http://localhost:5000';
 
   // Wrap loadMessages in useCallback to avoid useEffect warnings
   const loadMessages = useCallback(async () => {
     try {
-      const response = await fetch(`${API_BASE}/messages/${user.id}/${friend.id}`);
+      const response = await fetch(`${API_URL}/messages/${user.id}/${friend.id}`);
       if (!response.ok) throw new Error('Failed to load messages');
       const data = await response.json();
       setMessages(data);
       
       // Mark messages as read
-      await fetch(`${API_BASE}/messages/read`, {
+      await fetch(`${API_URL}/messages/read`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
@@ -53,7 +55,7 @@ function ChatWindow({ user, friend, onClose }) {
 
   setIsSending(true);
   try {
-    const response = await fetch(`${API_BASE}/messages`, {
+    const response = await fetch(`${API_URL}/messages`, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',

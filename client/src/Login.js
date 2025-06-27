@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+const API_URL=process.env.REACT_APP_API_URL || 'http://localhost:10000';
+
+console.log('API URL:', API_URL);
 
 function Login({ onLogin }) {
   const [username, setUsername] = useState('');
@@ -9,7 +12,7 @@ function Login({ onLogin }) {
   const [errors, setErrors] = useState({});
   const [message, setMessage] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-
+  
   // Enhanced validation
   const validateForm = () => {
     const newErrors = {};
@@ -56,7 +59,7 @@ function Login({ onLogin }) {
     const endpoint = isRegistering ? '/register' : '/login';
     
     try {
-      const response = await fetch(`http://localhost:5000${endpoint}`, {
+      const response = await fetch(`${API_URL}${endpoint}`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

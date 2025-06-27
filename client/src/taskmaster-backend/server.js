@@ -2,18 +2,36 @@ const express = require('express');
 const cors = require('cors');
 const sqlite3 = require('sqlite3').verbose();
 const app = express();
-const port = 5000;
+const port = process.env.PORT || 10000;
+require('dotenv').config();
+
+app.get('/', (req, res) => {
+  res.json({ message: 'Server is running' });
+});
+
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://taskmastersss.netlify.app'
+];
 
 const corsOptions = {
-  origin: 'http://localhost:3000',
+  origin: (origin, callback) => {
+    // allow Postman / curl (no Origin header)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      // reflect SAME origin back
+      return callback(null, origin);   // <<< key line
+    }
+    return callback(new Error('Not allowed by CORS'));
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 204
 };
 
 app.use(cors(corsOptions));
-
 
 app.use(express.json());
 
